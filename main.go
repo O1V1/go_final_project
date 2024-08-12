@@ -30,6 +30,8 @@ func main() {
 	// Инициализируем базу данных
 	initDatabase(dbFile)
 
+	defer DB.Close()
+
 	// Подключение к БД
 	fmt.Printf("Using database file: %s\n", dbFile)
 
@@ -37,12 +39,13 @@ func main() {
 	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)
 
+	//для шага 3
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 
-	// Запускаем сервер
-	/* fmt.Printf("Starting server at port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil)) */
+	// для шага 4
+	http.HandleFunc("/api/task", switchTaskHandler)
 
+	// Запускаем сервер
 	log.Printf("Starting server on port %s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Could not start server: %v\n", err)
