@@ -1,9 +1,9 @@
 package main
 
 import (
+	//"database/sql"
 	"encoding/json"
 
-	//"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 type Task struct {
-	ID      int    `json:"id"`
+	ID      string `json:"id"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
 	Comment string `json:"comment"`
@@ -20,17 +20,9 @@ type Task struct {
 }
 
 type TaskResponse struct {
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Error string `json:"error"`
 }
-
-type MultiTasksResponse struct {
-	Tasks []Task `json:"tasks"`
-	Error string `json:"error,omitempty"`
-}
-
-// var db *sql.DB
-//var DB *sql.DB
 
 /*
 func initDB() {
@@ -46,12 +38,18 @@ func initDB() {
 */
 
 // функция для определения метода запроса
+// надо переделать после всех запросов
 func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		handlePostTask(w, r)
 	case http.MethodGet:
-		handleGetTasks(w, r)
+		id := r.URL.Query().Get("id")
+		if id != "" {
+			handleGetTasks(w, r)
+		} else {
+			handleGetTasks(w, r)
+		}
 	case http.MethodDelete:
 		handleDeleteTask(w, r)
 	default:
@@ -90,7 +88,7 @@ func handlePostTask(w http.ResponseWriter, r *http.Request) {
 	//Если указана прошедшая дата, используем функцию из шага 3
 	//если нет праавила повторения, то ставим текущую дату
 	//if date.Before(now) {
-	//с датами не получалось, переделала на сравнение строк
+	//с датами не получалось before, переделала на сравнение строк
 	// можно попробовать truncate обе даты, если время будет
 	if task.Date < now.Format("20060102") {
 		if task.Repeat == "" {
@@ -110,49 +108,9 @@ func handlePostTask(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, "Failed to add task", http.StatusInternalServerError)
 		return
 	}
+	idStr := strconv.Itoa(id)
 
-	respondWithJSON(w, TaskResponse{ID: id, Error: ""}, http.StatusOK)
-}
-
-// Обработчик GET-запроса
-func handleGetTasks(w http.ResponseWriter, r *http.Request) {
-	search := r.URL.Query().Get("search")
-	limitStr := r.URL.Query().Get("limit")
-	limit := 10
-	if limitStr != "" {
-		limit, _ = strconv.Atoi(limitStr)
-	}
-
-	tasks, err := getTasksFromDatabase(search, limit)
-	if err != nil {
-		respondWithError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	respondWithJSON(w, MultiTasksResponse{Tasks: tasks}, http.StatusOK)
-}
-
-// Обработчик DELETE-запроса
-func handleDeleteTask(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		respondWithError(w, "Task ID is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		respondWithError(w, "Invalid task ID", http.StatusBadRequest)
-		return
-	}
-
-	err = deleteTaskFromDatabase(id)
-	if err != nil {
-		respondWithError(w, "Failed to delete task", http.StatusInternalServerError)
-		return
-	}
-
-	respondWithJSON(w, TaskResponse{Error: ""}, http.StatusOK)
+	respondWithJSON(w, TaskResponse{ID: idStr, Error: ""}, http.StatusOK)
 }
 
 // Добавляет таск в базу данных
@@ -180,42 +138,6 @@ func addTaskToDatabase(task Task) (int, error) {
 	}
 
 	return int(id), nil
-}
-
-func getTasksFromDatabase(search string, limit int) ([]Task, error) {
-	var tasks []Task
-
-	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?`
-	if search != "" {
-		if t, err := time.Parse("02.01.2006", search); err == nil {
-			query = `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? ORDER BY date LIMIT ?`
-			search = t.Format("20060102")
-		} else {
-			search = "%" + search + "%"
-		}
-	}
-
-	rows, err := DB.Query(query, search, search, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var task Task
-		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-		if err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-
-	return tasks, nil
-}
-
-func deleteTaskFromDatabase(id int) error {
-	_, err := DB.Exec("DELETE FROM scheduler WHERE id=?", id)
-	return err
 }
 
 // респонд в случае ошибки

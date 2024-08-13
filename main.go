@@ -45,6 +45,9 @@ func main() {
 	// для шага 4
 	http.HandleFunc("/api/task", switchTaskHandler)
 
+	// для шага 5
+	http.HandleFunc("/api/tasks", switchTaskHandler)
+
 	// Запускаем сервер
 	log.Printf("Starting server on port %s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
