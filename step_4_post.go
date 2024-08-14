@@ -43,18 +43,19 @@ func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		handlePostTask(w, r)
+
 	case http.MethodGet:
-		search := r.URL.Query().Get("search")
-		if search != "" {
-			handleGetList(w, r)
-		} else {
+		if r.URL.Path == "/api/task" {
 			handleGetTask(w, r)
+		} else if r.URL.Path == "/api/tasks" {
+			handleGetList(w, r)
 		}
 	case http.MethodPut:
 		handleUpdateTask(w, r)
 
 	case http.MethodDelete:
 		handleDeleteTask(w, r)
+
 	default:
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
@@ -155,3 +156,12 @@ func respondWithJSON(w http.ResponseWriter, payload interface{}, code int) {
 	w.WriteHeader(code)
 	w.Write(response)
 }
+
+/*
+	search := r.URL.Query().Get("search")
+	if search != "" {
+		handleGetList(w, r)
+	} else {
+		handleGetTask(w, r)
+	}
+*/

@@ -43,6 +43,7 @@ func main() {
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 
 	// для шага 4 и 6
+	//Api := "/api/task"
 	http.HandleFunc("/api/task", switchTaskHandler)
 
 	// для шага 5
