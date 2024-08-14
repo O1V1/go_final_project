@@ -44,12 +44,15 @@ func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		handlePostTask(w, r)
 	case http.MethodGet:
-		id := r.URL.Query().Get("id")
-		if id != "" {
-			handleGetTasks(w, r)
+		search := r.URL.Query().Get("search")
+		if search != "" {
+			handleGetList(w, r)
 		} else {
-			handleGetTasks(w, r)
+			handleGetTask(w, r)
 		}
+	case http.MethodPut:
+		handleUpdateTask(w, r)
+
 	case http.MethodDelete:
 		handleDeleteTask(w, r)
 	default:

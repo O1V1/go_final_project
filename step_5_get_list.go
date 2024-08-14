@@ -17,7 +17,7 @@ type MultiTasksResponse struct {
 }
 
 // Обработчик GET-запроса
-func handleGetTasks(w http.ResponseWriter, r *http.Request) {
+func handleGetList(w http.ResponseWriter, r *http.Request) {
 	//извлекаем из реквеста параметры search, limit
 	search := r.URL.Query().Get("search")
 	limitStr := r.URL.Query().Get("limit")
@@ -32,7 +32,7 @@ func handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//передаем в функцию поисковый запрос и лимит
-	tasks, err := getTasksFromDatabase(search, limit)
+	tasks, err := getTasksFromDB(search, limit)
 	if err != nil {
 		respondWithError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -42,10 +42,10 @@ func handleGetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // выбрать нужные задачи из базы данных
-func getTasksFromDatabase(search string, limit int) ([]Task, error) {
+func getTasksFromDB(search string, limit int) ([]Task, error) {
 
 	//подготовка формы
-	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?"
+	query := ""
 	var rows *sql.Rows
 	var err error
 	//отдельные запросы для разных ситуаций
@@ -67,18 +67,12 @@ func getTasksFromDatabase(search string, limit int) ([]Task, error) {
 			}
 		}
 	} else {
-		//query = "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?"
+		query = `SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?`
 		rows, err = DB.Query(query, limit)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	//получаем ответ на запрос по заданным параметрам
-	/*rows, err := DB.Query(query, search, search, limit)
-	if err != nil {
-		return nil, err
-	} */
 
 	//обрабатываем полученные записи
 	defer rows.Close()
