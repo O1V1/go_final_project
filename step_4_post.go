@@ -24,25 +24,15 @@ type TaskResponse struct {
 	Error string `json:"error"`
 }
 
-/*
-func initDB() {
-	var err error
-	db, err = sql.Open("sqlite3", "./scheduler.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-}
-*/
-
-// функция для определения метода запроса
-// надо переделать после всех запросов
+// обработчик по методу запроса
 func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		handlePostTask(w, r)
+		if r.URL.Path == "/api/task" {
+			handlePostTask(w, r)
+		} else if r.URL.Path == "/api/task/done" {
+			handleTaskDone(w, r)
+		}
 
 	case http.MethodGet:
 		if r.URL.Path == "/api/task" {
@@ -66,7 +56,6 @@ func handlePostTask(w http.ResponseWriter, r *http.Request) {
 	var task Task
 	//фиксирую текущую дату, чтобы не было путаницы
 	now := time.Now()
-	//now = now.Truncate(24 * time.Hour)
 
 	//десериализация реквеста в структуру, обработка ошибки и выход в случае ошибки
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -91,9 +80,6 @@ func handlePostTask(w http.ResponseWriter, r *http.Request) {
 	}
 	//Если указана прошедшая дата, используем функцию из шага 3
 	//если нет праавила повторения, то ставим текущую дату
-	//if date.Before(now) {
-	//с датами не получалось before, переделала на сравнение строк
-	// можно попробовать truncate обе даты, если время будет
 	if task.Date < now.Format("20060102") {
 		if task.Repeat == "" {
 			task.Date = time.Now().Format("20060102")
@@ -140,7 +126,6 @@ func addTaskToDatabase(task Task) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	return int(id), nil
 }
 
@@ -156,12 +141,3 @@ func respondWithJSON(w http.ResponseWriter, payload interface{}, code int) {
 	w.WriteHeader(code)
 	w.Write(response)
 }
-
-/*
-	search := r.URL.Query().Get("search")
-	if search != "" {
-		handleGetList(w, r)
-	} else {
-		handleGetTask(w, r)
-	}
-*/

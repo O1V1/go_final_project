@@ -42,12 +42,14 @@ func main() {
 	//для шага 3
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 
-	// для шага 4 и 6
-	//Api := "/api/task"
+	// для шагов 4, 6 и 7(удаление)
 	http.HandleFunc("/api/task", switchTaskHandler)
 
 	// для шага 5
 	http.HandleFunc("/api/tasks", switchTaskHandler)
+
+	// для шага 7(выполнение)
+	http.HandleFunc("/api/task/done", switchTaskHandler)
 
 	// Запускаем сервер
 	log.Printf("Starting server on port %s\n", port)

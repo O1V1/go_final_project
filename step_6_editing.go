@@ -45,21 +45,6 @@ func handleGetTask(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(response)
 
-	//fmt.Println(task)
-	//fmt.Println(json.NewEncoder(w).Encode(task))
-
-	/*
-		if err != nil {
-			//http.Error(w, `{"error": "Задача не найдена"}`, http.StatusNotFound)
-			//respondWithError(w, "Failed to add task", http.StatusNotFound)
-			respondWithJSON(w, IDTaskResponse{ID: task.ID, Error: ""}, http.StatusNotFound)
-			return
-		}
-
-		respondWithJSON(w, IDTaskResponse{ID: task.ID, Date: task.Date, Title: task.Title, Comment: task.Comment, Repeat: task.Repeat, Error: ""}, http.StatusOK)
-
-		//json.NewEncoder(w).Encode(task)
-	} */
 }
 
 func getTaskById(id string) (Task, error) {
@@ -80,7 +65,8 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		//http.Error(w, `{"error": "Некорректные данные"}`, http.StatusBadRequest)
 		return
 	}
-	//проверка, что заголовок не пустой
+	//проверка, что заголовок и id не пустые
+	//Проверки повторяются с заданием post, можно вынестти часть в отдельную функцию
 	if task.Title == "" || task.ID == "" {
 		respondWithError(w, "INVALID FORMAT", http.StatusBadRequest)
 		return
@@ -91,6 +77,7 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//проверяю, существует ли запись с таким id
 	date := ""
 	row := DB.QueryRow("SELECT date FROM scheduler WHERE id = :id", sql.Named("id", task.ID))
 	err = row.Scan(&date)
@@ -110,12 +97,6 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		if !strings.Contains("1234567890", task.ID) || task.ID == "" {
-			respondWithError(w, "Invalid date format", http.StatusBadRequest)
-			return
-		} */
-
 	//Если указана прошедшая дата, используем функцию из шага 3
 	//если нет праавила повторения, то ставим текущую дату
 	//if date.Before(now) {
@@ -134,8 +115,8 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//err = updateTask(task)
-	_, err = DB.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	err = UpdateTask(task)
+	//_, err = DB.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		http.Error(w, `{"error": "не обновлено"}`, http.StatusNotImplemented)
 		return
@@ -144,45 +125,10 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-func updateTask(task Task) error {
+func UpdateTask(task Task) error {
 	_, err := DB.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
-
-/*
-// респонд в случае ошибки
-func respondWithError(w http.ResponseWriter, message string, code int) {
-	respondWithJSON(w, TaskResponse{Error: message}, code)
-}
-
-// общий формат респонда
-func respondWithJSON(w http.ResponseWriter, payload interface{}, code int) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(code)
-	w.Write(response)
-}
-
-id := r.URL.Query().Get("id")
-    if id != "" {
-        // запрос на получение задачи по идентификатору
-        task, err := getTaskById(id)
-        if err != nil {
-            http.Error(w, `{"error": "Задача не найдена"}`, http.StatusNotFound)
-            return
-        }
-        json.NewEncoder(w).Encode(task)
-    } else {
-        // запрос на поиск задач по заголовку или комментарию
-        search := r.URL.Query().Get("search")
-        limit := r.URL.Query().Get("limit")
-        tasks, err := searchTasks(search, limit)
-        if err != nil {
-            http.Error(w, `{"error": "Ошибка при поиске задач"}`, http.StatusInternalServerError)
-            return
-        }
-        json.NewEncoder(w).Encode(tasks)
-    }
-
-*/
