@@ -11,37 +11,35 @@ import (
 
 var DB *sql.DB
 
+// initDatabase готовит базу данных к использованию
 func initDatabase(dbFile string) {
-
 	var err error
+	//установка соединения с базой данных dbFile
 	DB, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
-
+	//создание файла базы данных в случае его отсутствия
 	if !fileExists(dbFile) {
 		createDatabase()
 	}
-
 }
 
+// fileExists проверяет, существует ли файл filename
 func fileExists(filename string) bool {
+	//os.Stat ищет файл либо по абсол. пути, если он указан в filename, либо в текущей раб директории
 	info, err := os.Stat(filename)
+	//Если err равна os.ErrNotExist, файл не найден, возвращается false
 	if os.IsNotExist(err) {
 		return false
 	}
+	//если filename не является директорией, возращается true
 	return !info.IsDir()
 }
 
-// func createDatabase(dbFile string) {
+// createDatabase создает базу данных с таблицей scheduler
 func createDatabase() {
-	var err error
-	/* DB, err = sql.Open("sqlite3", dbFile)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer DB.Close() */
-
+	//формируется текст команды для создания и индексирования таблицы
 	createTableSQL := `
     CREATE TABLE scheduler (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,22 +50,11 @@ func createDatabase() {
     );
     CREATE INDEX idx_date ON scheduler (date);
     `
-
-	_, err = DB.Exec(createTableSQL)
+	//исполнение команды, обработтка ошибки
+	_, err := DB.Exec(createTableSQL)
 	if err != nil {
 		log.Fatalf("Failed to create table: %v", err)
 	}
-
+	//сообщение об успешном выполнении задачи
 	fmt.Println("Database and table created successfully")
 }
-
-/* func fileExists() bool {
-	appPath, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	dbile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	_, err = os.Stat(dbile)
-
-	return err != nil
-} */

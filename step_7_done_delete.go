@@ -4,10 +4,8 @@ import (
 	//"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	//"strconv"
-
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -40,14 +38,13 @@ func handleTaskDone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		task.Date = nextDate
-		err = UpdateTask(task)
+		err = updateTask(task)
 		if err != nil {
 			http.Error(w, `{"error": "не обновлено"}`, http.StatusNotImplemented)
 			return
 		}
 
 	}
-
 	json.NewEncoder(w).Encode(map[string]interface{}{})
 	//respondWithJSON(w, interface{}, http.StatusOK)
 }
@@ -60,13 +57,13 @@ func handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := strconv.Atoi(id)
-	if err != nil {
+	//_, err := strconv.Atoi(id)
+	if !isNumeric(id) {
 		respondWithError(w, "Invalid task ID", http.StatusBadRequest)
 		return
 	}
 
-	err = DeleteTask(id)
+	err := DeleteTask(id)
 
 	if err != nil {
 		http.Error(w, `{"error": "Ошибка при удалении задачи"}`, http.StatusInternalServerError)

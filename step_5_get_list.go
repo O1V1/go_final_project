@@ -2,47 +2,59 @@ package main
 
 import (
 	"database/sql"
-	//"encoding/json"
 
+	//"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
+	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// определяет структуру для списка задач
 type MultiTasksResponse struct {
 	Tasks []Task `json:"tasks"`
 	Error string `json:"error,omitempty"`
 }
 
-// Обработчик GET-запроса
+// по ТЗ лимит должен быть от 10 до 50, определяем любое число
+const TAX_LIMIT = "15"
+
+// Обработчик GET-запроса для получения списка задач
 func handleGetList(w http.ResponseWriter, r *http.Request) {
 	//извлекаем из реквеста параметры search, limit
 	search := r.URL.Query().Get("search")
 	limitStr := r.URL.Query().Get("limit")
 
 	//по ТЗ лимит должен быть от 10 до 50
-	limit := 10
-	if limitStr != "" {
-		limit, _ = strconv.Atoi(limitStr)
-	}
-	if limit < 10 || limit > 50 {
-		limit = 10
+	//если лимит задан в запросе, то проверяем на цифры и на соответствие диапазону из ТЗ
+	//var limit int
+	//var err error
+	if limitStr == "" {
+		limitStr = TAX_LIMIT
+	} else {
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			respondWithError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if limit < 10 || limit > 50 {
+			limitStr = TAX_LIMIT
+		}
 	}
 
 	//передаем в функцию поисковый запрос и лимит
-	tasks, err := getTasksFromDB(search, limit)
+	tasks, err := getTasksFromDB(search, limitStr)
 	if err != nil {
 		respondWithError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	respondWithJSON(w, MultiTasksResponse{Tasks: tasks}, http.StatusOK)
 }
 
-// выбрать нужные задачи из базы данных
-func getTasksFromDB(search string, limit int) ([]Task, error) {
+// getTasksFromDB возвращает список задач из БД, удовлетворяющих условию search или ошибку
+func getTasksFromDB(search string, limit string) ([]Task, error) {
 
 	//подготовка формы
 	query := ""
@@ -93,3 +105,32 @@ func getTasksFromDB(search string, limit int) ([]Task, error) {
 
 	return tasks, nil
 }
+
+// isNumeric проверяет, что в переданной строке только цифры
+func isNumeric(s string) bool {
+	for _, r := range s {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+/*func getLimit(limitStr string) string {
+
+//по ТЗ лимит должен быть от 10 до 50
+	//если лимит задан в запросе, то проверяем на цифры и на соответствие диапазону из ТЗ
+	var limit int
+	var err error
+	if limitStr == "" {
+		limitStr = TAX_LIMIT
+	} else {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			respondWithError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if limit < 10 || limit > 50 {
+			limitStr = TAX_LIMIT
+		}
+	} */

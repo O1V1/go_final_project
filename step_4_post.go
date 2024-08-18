@@ -11,6 +11,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Task структура для объекта базы данных
 type Task struct {
 	ID      string `json:"id"`
 	Date    string `json:"date"`
@@ -24,7 +25,7 @@ type TaskResponse struct {
 	Error string `json:"error"`
 }
 
-// обработчик по методу запроса
+/*/ обработчик по методу запроса
 func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -49,12 +50,12 @@ func switchTaskHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
-}
+} */
 
-// Обработчик POST-запроса, добавление новой задачи в бд
+// Обработчик POST-запроса, добавление новой задачи в базу данных
 func handlePostTask(w http.ResponseWriter, r *http.Request) {
 	var task Task
-	//фиксирую текущую дату, чтобы не было путаницы
+	//фиксирую текущую дату
 	now := time.Now()
 
 	//десериализация реквеста в структуру, обработка ошибки и выход в случае ошибки
@@ -93,51 +94,56 @@ func handlePostTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id, err := addTaskToDatabase(task)
+	idStr, err := addTaskToDB(task)
 	if err != nil {
 		respondWithError(w, "Failed to add task", http.StatusInternalServerError)
 		return
 	}
-	idStr := strconv.Itoa(id)
+	//idStr := strconv.Itoa(id)
 
 	respondWithJSON(w, TaskResponse{ID: idStr, Error: ""}, http.StatusOK)
 }
 
-// Добавляет таск в базу данных
-func addTaskToDatabase(task Task) (int, error) {
+// addTaskToDatabase Добавляет задаччу в БД, возвращает id добавленной записи или ошибку
+func addTaskToDB(task Task) (string, error) {
 
-	//сначала подготовим запрос
+	//подготовка запроса
 	stmt, err := DB.Prepare("INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	//при возврате функции запрос будет закрыт
 	defer stmt.Close()
 
-	// передаем аргументы в подготовлленный запрос и выполняем егло
+	// исполнение подготовленного запроса с полями задачи task в качестве аргументов
 	res, err := stmt.Exec(task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	// получаем id последней удачно добавленной записи
-	// при ошибках на предыдущих шагах выполняется возврат функции
+	// при ошибках выполняется возврат функции
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return int(id), nil
+	//id получена в формате int64, п
+	idStr := strconv.Itoa(int(id))
+	return idStr, nil
 }
 
-// респонд в случае ошибки
-func respondWithError(w http.ResponseWriter, message string, code int) {
-	respondWithJSON(w, TaskResponse{Error: message}, code)
-}
-
-// общий формат респонда
+// общий формат респонда в формате JSON
+// respondWithJSON записывает в переменную w нужные заголовки, передаваемые данные и код ответа
 func respondWithJSON(w http.ResponseWriter, payload interface{}, code int) {
+	//
 	response, _ := json.Marshal(payload)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+// респонд в случае ошибки
+// respondWithError записывает в w сообщение и код ошибки
+func respondWithError(w http.ResponseWriter, message string, code int) {
+	respondWithJSON(w, TaskResponse{Error: message}, code)
 }

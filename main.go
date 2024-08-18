@@ -5,51 +5,54 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
-	//"path/filepath"
 )
 
-// Указываем директорию, из которой будут обслуживаться статические файлы
+// Указываем директорию для статических файлов
 var webDir = "./web"
 
 func main() {
 
-	// Получаем значение переменной окружения TODO_PORT
+	// получение номера порта
 	port := getPort()
-	/* os.Getenv("TODO_PORT")
-	if port == "" {
-		port = "7540" // Порт по умолчанию
-	} */
 
-	// Получаем значение переменной окружения TODO_DBFILE
-	dbFile := os.Getenv("TODO_DBFILE")
-	if dbFile == "" {
-		dbFile = "scheduler.db" // Файл базы данных по умолчанию
-	}
+	//получение пути к базе данных
+	dbFile := getDBFile()
 
-	// Инициализируем базу данных
+	// Инициализия базы данных
 	initDatabase(dbFile)
 
 	defer DB.Close()
 
-	// Подключение к БД
+	// Вывод сообщения о подключении к БД
 	fmt.Printf("Using database file: %s\n", dbFile)
 
-	// Настраиваем маршрутизатор для обслуживания статических файлов
+	//для шага 8 - обработчик для аутентификации
+	http.HandleFunc("/api/signin", signinHandler)
+
+	// маршрутизатор для обслуживания статических файлов (интерфейс пользователя, отображение контента, пр)
 	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)
 
-	//для шага 3
+	//для шага 3 - запросы к функции NextDate
+	//API-обработчик для адреса "/api/nextdate"
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 
-	// для шагов 4, 6 и 7(удаление)
-	http.HandleFunc("/api/task", switchTaskHandler)
+	// для шагов 4 (добавление), 6 (редактирование) и 7(удаление) задачи
+	//API-обработчик для адреса "/api/task"
+	//по ТЗ все методы с авторизацией
+	http.HandleFunc("/api/task", auth(switchTaskHandler))
 
-	// для шага 5
+	// для шага 5 (список задач и поиск)
+	//API-обработчик для адреса "/api/tasks"
+	//по ТЗ с авторизацией только получение списка задач
 	http.HandleFunc("/api/tasks", switchTaskHandler)
 
-	// для шага 7(выполнение)
-	http.HandleFunc("/api/task/done", switchTaskHandler)
+	// для шага 7(выполнение задачи)
+	//API-обработчик для адреса "/api/task/done"
+	//по ТЗ с авторизацией
+	http.HandleFunc("/api/task/done", auth(switchTaskHandler))
 
 	// Запускаем сервер
 	log.Printf("Starting server on port %s\n", port)
@@ -58,17 +61,34 @@ func main() {
 	}
 }
 
-// Функция для получения порта из переменной окружения
+// getPort() возвращает порт из переменной окружения, либо значение по умолчанию
 func getPort() string {
-	// По умолчанию используем порт 7540
-	defaultPort := "7540"
-
-	// Проверяем переменную окружения TODO_PORT и что это цифры
-	if portStr := os.Getenv("TODO_PORT"); portStr != "" {
-		if port, err := strconv.Atoi(portStr); err == nil {
-			return strconv.Itoa(port)
+	port := os.Getenv("TODO_PORT")
+	if port == "" {
+		port = "7540" //значение по умочанию
+	} else {
+		//проверка, что получено цифровое значение для порта
+		var err error
+		_, err = strconv.Atoi(port)
+		if err != nil {
+			log.Fatalf("Failed to create table: %v", err)
 		}
 	}
+	return port
+}
 
-	return defaultPort
+// getDBFile() возвращает путь к файлу базы данных из переменной окружения TODO_DBFILE, либо значение по умолчанию
+func getDBFile() string {
+	//Получаем значение переменной окружения TODO_DBFILE
+	dbFile := os.Getenv("TODO_DBFILE")
+	//если переменная окружения - пустая строка, формируем путь по умолчанию (scheduler.db в текущей директории)
+	if dbFile == "" {
+		wd, err := os.Getwd()
+		//os.Executable() - не подошла, так как возвращала временную директорию
+		if err != nil {
+			log.Fatal(err)
+		}
+		dbFile = filepath.Join(wd, "scheduler.db")
+	}
+	return dbFile
 }

@@ -3,11 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-
-	//"encoding/json"
 	"net/http"
-
-	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -71,8 +67,12 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, "INVALID FORMAT", http.StatusBadRequest)
 		return
 	}
-
-	if _, err := strconv.Atoi(task.ID); err != nil {
+	/*
+		if _, err := strconv.Atoi(task.ID); err != nil {
+			respondWithError(w, "INVALID FORMAT", http.StatusBadRequest)
+			return
+		}*/
+	if !isNumeric(task.ID) {
 		respondWithError(w, "INVALID FORMAT", http.StatusBadRequest)
 		return
 	}
@@ -115,7 +115,7 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = UpdateTask(task)
+	err = updateTask(task)
 	//_, err = DB.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		http.Error(w, `{"error": "не обновлено"}`, http.StatusNotImplemented)
@@ -125,7 +125,7 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func UpdateTask(task Task) error {
+func updateTask(task Task) error {
 	_, err := DB.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		return err

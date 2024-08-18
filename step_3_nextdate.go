@@ -9,7 +9,6 @@ import (
 )
 
 // NextDate вычисляет следующую дату на основе правила повторения
-// спросить, зачем передавать now
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	// Парсим исходную дату
@@ -20,11 +19,9 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	// БАЗОВОЕ ПРАВИЛО 1. Если правило не указано, отмеченная выполненной задача будет удаляться из таблицы
 	// по ТЗ ошибка должна возвращаться, если в колонке`repeat` — пустая строка;
-	// я так поняла, что возврат "" будет вести к удалению выполненной задачи
 	if repeat == "" {
 		return "", fmt.Errorf("правило повторения не указано")
 	}
-	// сюда дописать правило, когда будет понятно, как удалить
 
 	// Определяем переменную для следующей даты
 	var nextDate time.Time
@@ -182,12 +179,12 @@ func getNextWeekDay(now time.Time, weekDays []string) time.Time {
 // getNextMonthDay находит следующий день и месяц
 func getNextMonthDay(now time.Time, days []int, months []int) time.Time {
 	month := int(now.Month())
-	if len(months) > 0 && !contains(months, month) {
+	if len(months) > 0 && !isContains(months, month) {
 		now = time.Date(now.Year(), now.Month(), 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), now.Location())
 		for {
 			now = now.AddDate(0, 1, 0)
 			month = int(now.Month())
-			if contains(months, month) {
+			if isContains(months, month) {
 				break
 			}
 		}
@@ -221,7 +218,7 @@ func parseToIntSlice(strSlice []string) []int {
 }
 
 // contains проверяет, содержит ли список элемент
-func contains(list []int, item int) bool {
+func isContains(list []int, item int) bool {
 	for _, i := range list {
 		if i == item {
 			return true
