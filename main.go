@@ -44,7 +44,7 @@ func main() {
 	//по ТЗ все методы с авторизацией
 	http.HandleFunc("/api/task", auth(switchTaskHandler))
 
-	// для шага 5 (список задач и поиск)
+	// для шага 5 (список задач, поиск)
 	//API-обработчик для адреса "/api/tasks"
 	//по ТЗ с авторизацией только получение списка задач
 	http.HandleFunc("/api/tasks", switchTaskHandler)
