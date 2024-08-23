@@ -13,8 +13,7 @@ RUN go mod download
 # копируем исходный код в контейнер
 COPY . .
 
-#строим Go приложение (при CGO_ENABLED=0 не работает, причину пока не поняла)
-#RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o my_app .
+#строим Go приложение (при CGO_ENABLED=0 не работает, причину пока не поняла
 #RUN GOOS=linux GOARCH=amd64 go build -o my_app .
 RUN go build -o my_app . 
 
@@ -23,8 +22,10 @@ ENV TODO_PASSWORD="123"
 ENV TODO_DBFILE="./scheduler.db"
 
 
-# указываем, что веб-сервер будет слушать порт
-EXPOSE 7540
+# веб-сервер будет слушать порт, если он указан в переменной окружения TODO_PORT,
+# иначе по умолчанию будет использован порт 7540
+EXPOSE ${TODO_PORT:-7540}
+
 
 # определяем команду для запуска веб-сервера
 CMD ["./my_app"]

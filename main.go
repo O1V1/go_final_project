@@ -9,8 +9,24 @@ import (
 	"strconv"
 )
 
-// Указываем директорию для статических файлов
-var webDir = "./web"
+// Определение директории для статических файлов, объявление перем для рабочей директории
+// чтение переменных окружения
+var (
+	webDir       = "./web"
+	workingDir   string
+	todoPort     = os.Getenv("TODO_PORT")
+	todoDBFile   = os.Getenv("TODO_DBFILE")
+	todoPassword = os.Getenv("TODO_PASSWORD")
+)
+
+// инициализация переменной workingDir значением текущего рабочего каталога
+func init() {
+	var err error
+	workingDir, err = os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get working directory: %v\n", err)
+	}
+}
 
 func main() {
 
@@ -63,32 +79,24 @@ func main() {
 
 // getPort() возвращает порт из переменной окружения, либо значение по умолчанию
 func getPort() string {
-	port := os.Getenv("TODO_PORT")
-	if port == "" {
-		port = "7540" //значение по умочанию
-	} else {
-		//проверка, что получено цифровое значение для порта
-		var err error
-		_, err = strconv.Atoi(port)
-		if err != nil {
-			log.Fatalf("Failed to create table: %v", err)
-		}
+	if todoPort == "" {
+		return "7540" //значение по умочанию
 	}
-	return port
+	//проверка, что получено цифровое значение для порта
+	var err error
+	_, err = strconv.Atoi(todoPort)
+	if err != nil {
+		log.Fatalf("Failed to create table: %v", err)
+	}
+	return todoPort
 }
 
 // getDBFile() возвращает путь к файлу базы данных из переменной окружения TODO_DBFILE, либо значение по умолчанию
 func getDBFile() string {
-	//Получаем значение переменной окружения TODO_DBFILE
-	dbFile := os.Getenv("TODO_DBFILE")
 	//если переменная окружения - пустая строка, формируем путь по умолчанию (scheduler.db в текущей директории)
-	if dbFile == "" {
-		wd, err := os.Getwd()
-		//os.Executable() - не подошла, так как возвращала временную директорию
-		if err != nil {
-			log.Fatal(err)
-		}
-		dbFile = filepath.Join(wd, "scheduler.db")
+	if todoDBFile == "" {
+		//dbFile = filepath.Join(workingDir, "scheduler.db")
+		return filepath.Join(workingDir, "scheduler.db")
 	}
-	return dbFile
+	return todoDBFile
 }

@@ -12,7 +12,7 @@ import (
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	// Парсим исходную дату
-	initialDate, err := time.Parse("20060102", date)
+	initialDate, err := time.Parse(DATE_FORMAT, date)
 	if err != nil {
 		return "", fmt.Errorf("некорректный формат даты: %s", date)
 	}
@@ -148,7 +148,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", fmt.Errorf("неверный формат правила повторения: %s", repeat)
 	}
 
-	return nextDate.Format("20060102"), nil
+	return nextDate.Format(DATE_FORMAT), nil
 }
 
 // находим дату переноса задачи, позже текущей
@@ -239,7 +239,7 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Парсим дату `now`
-	now, err := time.Parse("20060102", nowStr)
+	now, err := time.Parse(DATE_FORMAT, nowStr)
 	if err != nil {
 		http.Error(w, "Некорректный формат даты 'now'", http.StatusBadRequest)
 		return

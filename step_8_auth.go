@@ -3,11 +3,8 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/json"
-
-	//	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -40,7 +37,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Сравнение введённого пользователем пароля с паролем в переменной окружения TODO_PASSWORD
-	if req.Password != os.Getenv("TODO_PASSWORD") {
+	if req.Password != todoPassword {
 		resp := SignResponse{Error: "Неверный пароль"}
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -70,10 +67,9 @@ func auth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Проверка наличия пароля в переменной окружения TODO_PASSWORD
 		//по ТЗ проверка аутентификации происходит, только если определён пароль в TODO_PASSWORD
-		pass := os.Getenv("TODO_PASSWORD")
-		if len(pass) > 0 {
+		if len(todoPassword) > 0 {
 			//Если пароль определен, функция получает хэш пароля и преобразует его в строковый формат.
-			passwordHash := sha256.Sum256([]byte(pass))
+			passwordHash := sha256.Sum256([]byte(todoPassword))
 			passwordHashString := fmt.Sprintf("%x", passwordHash)
 
 			// Получение JWT-токен из куки запроса
