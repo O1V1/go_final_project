@@ -1,16 +1,79 @@
-package main
+package service
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+
+	"myproject/pkg/config"
+	"myproject/pkg/entities"
+	"myproject/pkg/storage"
 )
 
-// NextDate вычисляет следующую дату на основе правила повторения
-func NextDate(now time.Time, date string, repeat string) (string, error) {
+const DATE_FORMAT = config.DATE_FORMAT
 
+// интерфейс TaskService определяет методы для работы с Task
+type TaskService interface {
+	PrepareTaskTitleAndDate(task entities.Task, now time.Time) (entities.Task, error)
+	NextDate(now time.Time, date string, repeat string) (string, error)
+}
+
+// структура для работы taskService
+type taskService struct {
+	taskRepository storage.TaskRepository
+}
+
+// конструктор нового экземпляра структуры taskService
+func NewTaskService(taskRepository storage.TaskRepository) TaskService {
+	return &taskService{
+		taskRepository: taskRepository,
+	}
+}
+
+// метод структуры taskService, бывшая функция prepareTaskTitleAndDate
+// осуществляет подготовку структуры task для дальшейшего использования
+func (s *taskService) PrepareTaskTitleAndDate(task entities.Task, now time.Time) (entities.Task, error) {
+	nowFormat := now.Format(DATE_FORMAT)
+	//проводятся проверки различных полей task на соответствие требованиям БД
+	//проверка формата поля Title, оно не должно быть пустое
+	if task.Title == "" {
+		return entities.Task{}, errors.New("invalid title format")
+	}
+
+	//Если поле `date` не указано или содержит пустую строку, берётся сегодняшнее число
+	if task.Date == "" {
+		task.Date = nowFormat
+	}
+
+	//проверка формата поля Date
+	_, err := time.Parse(DATE_FORMAT, task.Date)
+	if err != nil {
+		return entities.Task{}, err
+	}
+
+	//Обработка поля Date, если указана прошедшая дата
+	if task.Date < nowFormat {
+		//используется текущая дата, если нет правила повторов
+		if task.Repeat == "" {
+			task.Date = nowFormat
+			//используется функция nextDate, если указано правило повторов
+		} else {
+			nextDate, err := s.NextDate(now, task.Date, task.Repeat)
+			if err != nil {
+				return entities.Task{}, err
+			}
+			task.Date = nextDate
+		}
+	}
+	return task, nil
+}
+
+// метод структуры taskService, бывшая функция NextDate
+// NextDate вычисляет следующую дату на основе правил повторения
+func (s *taskService) NextDate(now time.Time, date string, repeat string) (string, error) {
 	// Парсим исходную дату
 	initialDate, err := time.Parse(DATE_FORMAT, date)
 	if err != nil {
@@ -151,7 +214,19 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	return nextDate.Format(DATE_FORMAT), nil
 }
 
-// находим дату переноса задачи, позже текущей
+// далее - вспомогательные функции, которые используются методами этого слоя
+
+// isNumeric проверяет, что в переданной строке только цифры
+func IsNumeric(s string) bool {
+	for _, r := range s {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// находит дату переноса задачи, позже текущей
 func getCorrectDate(now, inDate time.Time, y, m, d int) time.Time {
 	nextD := inDate.AddDate(y, m, d)
 	for !nextD.After(now) {
@@ -225,35 +300,4 @@ func isContains(list []int, item int) bool {
 		}
 	}
 	return false
-}
-
-func nextDateHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем параметры запроса
-	nowStr := r.URL.Query().Get("now")
-	date := r.URL.Query().Get("date")
-	repeat := r.URL.Query().Get("repeat")
-
-	if nowStr == "" || date == "" || repeat == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
-		return
-	}
-
-	// Парсим дату `now`
-	now, err := time.Parse(DATE_FORMAT, nowStr)
-	if err != nil {
-		http.Error(w, "Некорректный формат даты 'now'", http.StatusBadRequest)
-		return
-	}
-
-	// Вызываем функцию NextDate для вычисления следующей даты
-	nextDate, err := NextDate(now, date, repeat)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(nextDate))
-
 }

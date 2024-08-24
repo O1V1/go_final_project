@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"crypto/sha256"
@@ -6,66 +6,30 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
-
+	"github.com/golang-jwt/jwt"
 	_ "github.com/mattn/go-sqlite3"
+
+	"myproject/pkg/config"
 )
 
-// струкрура для реквеста при аутенификации
-type SignRequest struct {
-	Password string `json:"password"`
+const DATE_FORMAT = config.DATE_FORMAT
+
+var (
+	secretKey    = config.SecretKey
+	todoPassword = config.TodoPassword
+)
+
+// для авторизации
+type AuthMiddleware struct{}
+
+func NewAuthMiddleware() *AuthMiddleware {
+	return &AuthMiddleware{}
 }
 
-// структура для ответа при аутетификации
-type SignResponse struct {
-	Token string `json:"token,omitempty"`
-	Error string `json:"error,omitempty"`
-}
-
-// формируем переменную секретного ключа для подписи токена
-// строка получена с помощью openssl rand -base64 32
-var secretKey = []byte("9wsz2ew8lF2pxS4LEg1pHxq9jVhztkKQD5O/5OfvPdE=")
-
-// signinHandler обрабатывает запрос на аутентификацию пользователя
-func signinHandler(w http.ResponseWriter, r *http.Request) {
-	//Декодировка  JSON-тела запроса в структуру SignRequest
-	var req SignRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	//Сравнение введённого пользователем пароля с паролем в переменной окружения TODO_PASSWORD
-	if req.Password != todoPassword {
-		resp := SignResponse{Error: "Неверный пароль"}
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	//Формируется JWT-токен с хэшем пароля в полезной нагрузке
-	passwordHash := sha256.Sum256([]byte(req.Password))
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"passwordHash": fmt.Sprintf("%x", passwordHash),
-	})
-
-	// Подпись токена секретным ключом
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	//Возвращаем токен в поле token JSON-объекта
-	resp := SignResponse{Token: tokenString}
-	json.NewEncoder(w).Encode(resp)
-}
-
-// auth функция является middleware, который проверяет аутентификацию пользователя.
+// auth функция является middleware, который проверяет авторизацию пользователя.
 // принимает один аргумент: next (http.HandlerFunc), который представляет следующий обработчик в цепочке.
-func auth(next http.HandlerFunc) http.HandlerFunc {
+func (m *AuthMiddleware) Middleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Проверка наличия пароля в переменной окружения TODO_PASSWORD
 		//по ТЗ проверка аутентификации происходит, только если определён пароль в TODO_PASSWORD
 		if len(todoPassword) > 0 {
 			//Если пароль определен, функция получает хэш пароля и преобразует его в строковый формат.
@@ -127,4 +91,64 @@ func auth(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 
 	})
+}
+
+// для аутентификации
+type (
+	// струкрура для реквеста при аутенификации
+	SignRequest struct {
+		Password string `json:"password"`
+	}
+
+	// структура для ответа при аутентификации
+	SignResponse struct {
+		Token string `json:"token,omitempty"`
+		Error string `json:"error,omitempty"`
+	}
+
+	//структура обработчика аутентификации
+	AuthHandlerImpl struct {
+		todoPassword string
+		secretKey    []byte
+	}
+)
+
+// конструктор нового экземпляра структуры AuthHandlerImpl
+func NewAuthHandler(todoPassword string, secretKey []byte) *AuthHandlerImpl {
+	return &AuthHandlerImpl{todoPassword: todoPassword, secretKey: secretKey}
+}
+
+// signinHandler обрабатывает запрос на аутентификацию пользователя
+func (h *AuthHandlerImpl) SigninHandler(w http.ResponseWriter, r *http.Request) {
+	//Декодировка  JSON-тела запроса в структуру SignRequest
+	var req SignRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	//Сравнение введённого пользователем пароля с паролем в переменной окружения TODO_PASSWORD
+	if req.Password != h.todoPassword {
+		resp := SignResponse{Error: "Неверный пароль"}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	//Формируется JWT-токен с хэшем пароля в полезной нагрузке
+	passwordHash := sha256.Sum256([]byte(req.Password))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"passwordHash": fmt.Sprintf("%x", passwordHash),
+	})
+
+	// Подпись токена секретным ключом
+	tokenString, err := token.SignedString(h.secretKey)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	//Возвращаем токен в поле token JSON-объекта
+	resp := SignResponse{Token: tokenString}
+	json.NewEncoder(w).Encode(resp)
 }
