@@ -5,8 +5,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	handler "myproject/pkg/handlers"
-	auth "myproject/pkg/midware"
+	handler "github.com/O1V1/go_final_project/pkg/handlers"
+	auth "github.com/O1V1/go_final_project/pkg/middleware"
 )
 
 type Router struct {

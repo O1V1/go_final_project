@@ -8,9 +8,9 @@ import (
 	"time"
 	"unicode"
 
-	"myproject/pkg/config"
-	"myproject/pkg/entities"
-	"myproject/pkg/storage"
+	"github.com/O1V1/go_final_project/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/entities"
+	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
 const DATE_FORMAT = config.DATE_FORMAT

@@ -7,13 +7,13 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"myproject/pkg/config"
-	"myproject/pkg/entities"
-	"myproject/pkg/service"
-	"myproject/pkg/storage"
+	"github.com/O1V1/go_final_project/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/entities"
+	"github.com/O1V1/go_final_project/pkg/service"
+	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
-const DATE_FORMAT = config.DATE_FORMAT
+var DATE_FORMAT = config.DATE_FORMAT
 
 type (
 	//структура для обслуживания различных задач
@@ -74,6 +74,7 @@ func (h *TaskHandlerImpl) HandlePostTask(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	//проверка и заполнение полей
 	task, err := h.taskService.PrepareTaskTitleAndDate(task, now)
 	if err != nil {
 		respondWithError(w, err.Error(), http.StatusBadRequest)
@@ -120,7 +121,7 @@ func (h *TaskHandlerImpl) HandleGetList(w http.ResponseWriter, r *http.Request) 
 	search := r.URL.Query().Get("search")
 	emptyTaskSlice := make([]entities.Task, 0)
 	//передаем в функцию поисковый запрос и лимит
-	tasks, err := h.taskRepository.GetTasks(search, config.TASKS_LIMIT)
+	tasks, err := h.taskRepository.GetTasks(search)
 	if err != nil {
 		respondWithJSON(w, entities.MultiTasksResponse{
 			Tasks: emptyTaskSlice, Error: err.Error(),

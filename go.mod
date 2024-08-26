@@ -1,4 +1,4 @@
-module myproject
+module github.com/O1V1/go_final_project
 
 go 1.22.0
 

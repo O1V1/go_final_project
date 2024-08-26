@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"net/http"
 
-	"myproject/pkg/config"
-	handler "myproject/pkg/handlers"
-	auth "myproject/pkg/midware"
-	"myproject/pkg/router"
-	"myproject/pkg/service"
-	"myproject/pkg/storage"
+	"github.com/O1V1/go_final_project/pkg/config"
+	handler "github.com/O1V1/go_final_project/pkg/handlers"
+	auth "github.com/O1V1/go_final_project/pkg/middleware"
+	"github.com/O1V1/go_final_project/pkg/router"
+	"github.com/O1V1/go_final_project/pkg/service"
+	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
-func SetupAPI(DB *sql.DB) {
-	taskRepository := storage.NewTaskRepository(DB)                                   //новый экземпляр репозитория задач
+func NewServer(db *sql.DB) {
+	taskRepository := storage.NewTaskRepository(db)                                   //новый экземпляр репозитория задач
 	taskService := service.NewTaskService(taskRepository)                             //новый экземпляр сервиса задач
 	taskHandler := handler.NewTaskHandler(taskService, taskRepository)                //новый экземпляр обработчика задач
 	dateHandler := handler.NewDateHandler(taskService)                                //новый экземпляр обработчика дат

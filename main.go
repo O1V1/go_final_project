@@ -3,30 +3,30 @@ package main
 import (
 	"fmt"
 
-	"myproject/pkg/api"
-	"myproject/pkg/config"
-	"myproject/pkg/server"
-	"myproject/pkg/storage"
+	"github.com/O1V1/go_final_project/pkg/api"
+	"github.com/O1V1/go_final_project/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/server"
+	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
 func main() {
 	//инициализация различных параметоров для работы программы
 	config.Init()
 
-	//создается экземпляр структуры databaseRepository с помощью конструктора
-	dbRep := storage.NewDatabaseRepository(nil)
+	//создается экземпляр структуры storage с помощью конструктора
+	dbRep := storage.NewStorage(nil)
 	//вызывается метод InitDatabase для открытия базы данных.
-	dbRep.InitDatabase(config.DBFile)
+	dbRep.Init(config.DBFile)
 	//выделяю переменную для удобства
-	DB := dbRep.DB()
+	db := dbRep.DB()
 
-	defer DB.Close()
+	defer db.Close()
 
 	// Вывод сообщения о подключении к БД
 	fmt.Printf("Using database file: %s\n", config.DBFile)
 
 	// Настройка API-обработчиков
-	api.SetupAPI(DB)
+	api.NewServer(db)
 
 	// запуск сервера
 	server.Start()

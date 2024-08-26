@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	DATE_FORMAT = "20060102"
-	TASKS_LIMIT = "15"
+	DATE_FORMAT = "20060102" //установка предпочтительного формата для даты
+	TASKS_LIMIT = "15"       //установка максимального количества возвращаемых записей
 )
 
 var (
@@ -19,9 +19,9 @@ var (
 	TodoPassword = os.Getenv("TODO_PASSWORD")
 
 	//переменные для работы приложения
-	Port       string
-	DBFile     string
-	workingDir string
+	Port       string //номер порта для сервера приложения
+	DBFile     string //путь к файлу базы данных
+	workingDir string //рабочий каталог
 
 	WebDir = "./web" // Определение директории для статических файлов
 

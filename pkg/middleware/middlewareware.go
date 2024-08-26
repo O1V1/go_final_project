@@ -9,14 +9,13 @@ import (
 	"github.com/golang-jwt/jwt"
 	_ "github.com/mattn/go-sqlite3"
 
-	"myproject/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/config"
 )
-
-const DATE_FORMAT = config.DATE_FORMAT
 
 var (
 	secretKey    = config.SecretKey
 	todoPassword = config.TodoPassword
+	DATE_FORMAT  = config.DATE_FORMAT
 )
 
 // для авторизации

@@ -8,16 +8,16 @@ import (
 	"time"
 	"unicode"
 
-	"myproject/pkg/config"
-	"myproject/pkg/entities"
+	"github.com/O1V1/go_final_project/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/entities"
 )
 
-const DATE_FORMAT = config.DATE_FORMAT
+var DATE_FORMAT = config.DATE_FORMAT
 
 // интерфейс определяет методы для работы с сущностью Task
 type TaskRepository interface {
 	GetTaskByID(id string) (entities.Task, error)
-	GetTasks(search string, limit string) ([]entities.Task, error)
+	GetTasks(search string) ([]entities.Task, error)
 	AddTask(task entities.Task) (string, error)
 	UpdateTask(task entities.Task) error
 	DeleteTask(id string) error
@@ -57,14 +57,15 @@ func (r *taskRepository) AddTask(task entities.Task) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	//id получена в формате int64
+	//id получен в формате int64
 	idStr := strconv.Itoa(int(id))
 	return idStr, nil
 }
 
 // метод структуры taskRepository, бывшая функция getTasksFromDB
-func (r *taskRepository) GetTasks(search string, limit string) ([]entities.Task, error) {
+func (r *taskRepository) GetTasks(search string) ([]entities.Task, error) {
 	//подготовка формы
+	limit := config.TASKS_LIMIT
 	query := ""
 	var rows *sql.Rows
 	var err error
