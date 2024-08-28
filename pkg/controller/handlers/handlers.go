@@ -7,7 +7,6 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/O1V1/go_final_project/pkg/config"
 	"github.com/O1V1/go_final_project/pkg/entities"
 	"github.com/O1V1/go_final_project/pkg/service"
 	"github.com/O1V1/go_final_project/pkg/storage"
@@ -149,7 +148,7 @@ func (h *TaskHandlerImpl) HandleTaskDone(w http.ResponseWriter, r *http.Request)
 		}
 	default:
 		//переводим дату задачи в формат time.Time
-		now, err := time.Parse(config.DATE_FORMAT, task.Date)
+		now, err := time.Parse(entities.DATE_FORMAT, task.Date)
 		if err != nil {
 			http.Error(w, `{"error": "time parse error}`, http.StatusNotImplemented)
 			return
@@ -219,7 +218,7 @@ func (h *DateHandlerImpl) NextDateHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Парсим дату `now`
-	now, err := time.Parse(config.DATE_FORMAT, nowStr)
+	now, err := time.Parse(entities.DATE_FORMAT, nowStr)
 	if err != nil {
 		http.Error(w, "Некорректный формат даты 'now'", http.StatusBadRequest)
 		return

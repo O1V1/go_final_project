@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/O1V1/go_final_project/pkg/api"
-	"github.com/O1V1/go_final_project/pkg/config"
+	"github.com/O1V1/go_final_project/pkg/controller/api"
+	"github.com/O1V1/go_final_project/pkg/controller/config"
 	"github.com/O1V1/go_final_project/pkg/storage"
 )
 

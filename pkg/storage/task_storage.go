@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/O1V1/go_final_project/pkg/config"
 	"github.com/O1V1/go_final_project/pkg/entities"
 )
 
@@ -62,7 +61,7 @@ func (r *taskStorage) AddTask(task entities.Task) (string, error) {
 // метод структуры taskStorage, бывшая функция getTasksFromDB
 func (r *taskStorage) FindTasks(search string) ([]entities.Task, error) {
 	//подготовка формы
-	limit := config.TASKS_LIMIT
+	limit := entities.TASKS_LIMIT
 	query := ""
 	var rows *sql.Rows
 	var err error
@@ -80,7 +79,7 @@ func (r *taskStorage) FindTasks(search string) ([]entities.Task, error) {
 	//выбор задачи на конкретную дату
 	case search != "" && errT == nil:
 		query = `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? ORDER BY date LIMIT ?`
-		search = t.Format(config.DATE_FORMAT)
+		search = t.Format(entities.DATE_FORMAT)
 		rows, err = r.db.Query(query, search, limit)
 		if err != nil {
 			return emptyTaskSlice, err

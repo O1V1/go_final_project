@@ -8,12 +8,11 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/O1V1/go_final_project/pkg/config"
 	"github.com/O1V1/go_final_project/pkg/entities"
 	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
-const DATE_FORMAT = config.DATE_FORMAT
+var dateFormat = entities.DATE_FORMAT
 
 // интерфейс TaskService определяет методы для работы с Task
 type TaskService interface {
@@ -36,7 +35,7 @@ func NewTaskService(taskStorage storage.TaskStorage) TaskService {
 // метод структуры taskService, бывшая функция prepareTaskTitleAndDate
 // осуществляет подготовку структуры task для дальшейшего использования
 func (s *taskService) PrepareTaskTitleAndDate(task entities.Task, now time.Time) (entities.Task, error) {
-	nowFormat := now.Format(DATE_FORMAT)
+	nowFormat := now.Format(dateFormat)
 	//проводятся проверки различных полей task на соответствие требованиям БД
 	//проверка формата поля Title, оно не должно быть пустое
 	if task.Title == "" {
@@ -49,7 +48,7 @@ func (s *taskService) PrepareTaskTitleAndDate(task entities.Task, now time.Time)
 	}
 
 	//проверка формата поля Date
-	_, err := time.Parse(DATE_FORMAT, task.Date)
+	_, err := time.Parse(dateFormat, task.Date)
 	if err != nil {
 		return entities.Task{}, err
 	}
@@ -75,7 +74,7 @@ func (s *taskService) PrepareTaskTitleAndDate(task entities.Task, now time.Time)
 // NextDate вычисляет следующую дату на основе правил повторения
 func (s *taskService) NextDate(now time.Time, date string, repeat string) (string, error) {
 	// Парсим исходную дату
-	initialDate, err := time.Parse(DATE_FORMAT, date)
+	initialDate, err := time.Parse(dateFormat, date)
 	if err != nil {
 		return "", fmt.Errorf("некорректный формат даты: %s", date)
 	}
@@ -211,7 +210,7 @@ func (s *taskService) NextDate(now time.Time, date string, repeat string) (strin
 		return "", fmt.Errorf("неверный формат правила повторения: %s", repeat)
 	}
 
-	return nextDate.Format(DATE_FORMAT), nil
+	return nextDate.Format(dateFormat), nil
 }
 
 // далее - вспомогательные функции, которые используются методами этого слоя

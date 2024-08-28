@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/O1V1/go_final_project/pkg/config"
-	handler "github.com/O1V1/go_final_project/pkg/handlers"
-	auth "github.com/O1V1/go_final_project/pkg/middleware"
+	"github.com/O1V1/go_final_project/pkg/controller/config"
+	handler "github.com/O1V1/go_final_project/pkg/controller/handlers"
+	auth "github.com/O1V1/go_final_project/pkg/controller/middleware"
 	"github.com/O1V1/go_final_project/pkg/service"
 	"github.com/O1V1/go_final_project/pkg/storage"
 )
