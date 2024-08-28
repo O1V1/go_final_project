@@ -9,46 +9,24 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// интерфейс для работы с бд
-type Storage interface {
-	Init(dbFile string)
-	//Create()
-	DB() *sql.DB
-}
-
-// структура для интерфейса
-type storage struct {
-	db *sql.DB
-}
-
-// конструктор нового экземпляра структуры
-func NewStorage(db *sql.DB) Storage {
-	return &storage{
-		db: db,
-	}
-}
-
-// метод возвращает указатель на экземпляр *sql.DB
-func (r *storage) DB() *sql.DB {
-	return r.db
-}
-
-// метод initDatabase готовит базу данных к использованию
-func (r *storage) Init(dbFile string) {
+// init готовит базу данных к использованию
+func Init(dbFile string) *sql.DB {
 	var err error
 	//установка соединения с базой данных dbFile
-	r.db, err = sql.Open("sqlite3", dbFile)
+	conn, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 
 	//создание файла базы данных в случае его отсутствия
 	if !fileExists(dbFile) {
-		createDatabase(r.db)
+		createDatabase(conn)
 	}
+
+	return conn
 }
 
-// метод createDatabase создает базу данных с таблицей scheduler
+// функция createDatabase создает базу данных с таблицей scheduler
 func createDatabase(db *sql.DB) {
 	//формируется текст команды для создания и индексирования таблицы
 	createTableSQL := `

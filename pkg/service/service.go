@@ -23,13 +23,13 @@ type TaskService interface {
 
 // структура для работы taskService
 type taskService struct {
-	taskRepository storage.TaskRepository
+	taskStorage storage.TaskStorage
 }
 
 // конструктор нового экземпляра структуры taskService
-func NewTaskService(taskRepository storage.TaskRepository) TaskService {
+func NewTaskService(taskStorage storage.TaskStorage) TaskService {
 	return &taskService{
-		taskRepository: taskRepository,
+		taskStorage: taskStorage,
 	}
 }
 

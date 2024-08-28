@@ -15,7 +15,7 @@ import (
 var (
 	secretKey    = config.SecretKey
 	todoPassword = config.TodoPassword
-	DATE_FORMAT  = config.DATE_FORMAT
+	//DATE_FORMAT  = config.DATE_FORMAT
 )
 
 // для авторизации

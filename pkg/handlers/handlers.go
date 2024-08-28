@@ -13,13 +13,11 @@ import (
 	"github.com/O1V1/go_final_project/pkg/storage"
 )
 
-var DATE_FORMAT = config.DATE_FORMAT
-
 type (
 	//структура для обслуживания различных задач
 	TaskHandlerImpl struct {
-		taskService    service.TaskService
-		taskRepository storage.TaskRepository
+		taskService service.TaskService
+		taskStorage storage.TaskStorage
 	}
 	//структура для работы с датами
 	DateHandlerImpl struct {
@@ -38,8 +36,8 @@ type TaskHandler interface {
 }
 
 // конструктор для структуры TaskHandlerImpl
-func NewTaskHandler(taskService service.TaskService, taskRepository storage.TaskRepository) *TaskHandlerImpl {
-	return &TaskHandlerImpl{taskService: taskService, taskRepository: taskRepository}
+func NewTaskHandler(taskService service.TaskService, taskStorage storage.TaskStorage) *TaskHandlerImpl {
+	return &TaskHandlerImpl{taskService: taskService, taskStorage: taskStorage}
 }
 
 // конструктор для структуры DateHandlerImpl
@@ -53,7 +51,7 @@ func (h *TaskHandlerImpl) HandleDeleteTask(w http.ResponseWriter, r *http.Reques
 	id := r.URL.Query().Get("id")
 
 	//удаление записи
-	err := h.taskRepository.DeleteTask(id)
+	err := h.taskStorage.DeleteTask(id)
 	if err != nil {
 		respondWithError(w, err.Error(), http.StatusBadRequest)
 		return
@@ -81,7 +79,7 @@ func (h *TaskHandlerImpl) HandlePostTask(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	idStr, err := h.taskRepository.AddTask(task)
+	idStr, err := h.taskStorage.AddTask(task)
 	if err != nil {
 		respondWithError(w, "Failed to add task", http.StatusInternalServerError)
 		return
@@ -95,7 +93,7 @@ func (h *TaskHandlerImpl) HandleGetTask(w http.ResponseWriter, r *http.Request) 
 	//извлечение id из параметров запроса
 	id := r.URL.Query().Get("id")
 	//получение таски по запрошенному id, обработка ошибки
-	task, err := h.taskRepository.GetTaskByID(id)
+	task, err := h.taskStorage.GetTaskByID(id)
 	if err != nil {
 		//если задача не получена, возврат респонса с полем error
 		response := entities.IDTaskResponse{
@@ -121,7 +119,7 @@ func (h *TaskHandlerImpl) HandleGetList(w http.ResponseWriter, r *http.Request) 
 	search := r.URL.Query().Get("search")
 	emptyTaskSlice := make([]entities.Task, 0)
 	//передаем в функцию поисковый запрос и лимит
-	tasks, err := h.taskRepository.GetTasks(search)
+	tasks, err := h.taskStorage.FindTasks(search)
 	if err != nil {
 		respondWithJSON(w, entities.MultiTasksResponse{
 			Tasks: emptyTaskSlice, Error: err.Error(),
@@ -136,7 +134,7 @@ func (h *TaskHandlerImpl) HandleTaskDone(w http.ResponseWriter, r *http.Request)
 	//получение поля id
 	id := r.URL.Query().Get("id")
 	//получение записи из БД по полю id
-	task, err := h.taskRepository.GetTaskByID(id)
+	task, err := h.taskStorage.GetTaskByID(id)
 	if err != nil {
 		http.Error(w, `{"error": "Задача не найдена"}`, http.StatusNotFound)
 		return
@@ -144,14 +142,14 @@ func (h *TaskHandlerImpl) HandleTaskDone(w http.ResponseWriter, r *http.Request)
 	//Одноразовая задача с пустым полем `repeat` удаляется.
 	switch task.Repeat {
 	case "":
-		err = h.taskRepository.DeleteTask(id)
+		err = h.taskStorage.DeleteTask(id)
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка при удалении задачи"}`, http.StatusInternalServerError)
 			return
 		}
 	default:
 		//переводим дату задачи в формат time.Time
-		now, err := time.Parse(DATE_FORMAT, task.Date)
+		now, err := time.Parse(config.DATE_FORMAT, task.Date)
 		if err != nil {
 			http.Error(w, `{"error": "time parse error}`, http.StatusNotImplemented)
 			return
@@ -164,7 +162,7 @@ func (h *TaskHandlerImpl) HandleTaskDone(w http.ResponseWriter, r *http.Request)
 		}
 		task.Date = nextDate
 		//обновление измененных полей задачи
-		err = h.taskRepository.UpdateTask(task)
+		err = h.taskStorage.UpdateTask(task)
 		if err != nil {
 			http.Error(w, `{"error": "не обновлено"}`, http.StatusNotImplemented)
 			return
@@ -177,7 +175,6 @@ func (h *TaskHandlerImpl) HandleTaskDone(w http.ResponseWriter, r *http.Request)
 func (h *TaskHandlerImpl) HandleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	var task entities.Task
 	now := time.Now()
-	//nowFormat := now.Format(DATE_FORMAT)
 	// извлечение тела запроса в структуру task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
@@ -186,7 +183,7 @@ func (h *TaskHandlerImpl) HandleUpdateTask(w http.ResponseWriter, r *http.Reques
 	}
 
 	//проверка формата поля ID
-	if _, err = h.taskRepository.GetTaskByID(task.ID); err != nil {
+	if _, err = h.taskStorage.GetTaskByID(task.ID); err != nil {
 		respondWithError(w, "Invalid ID formal", http.StatusBadRequest)
 		return
 	}
@@ -199,7 +196,7 @@ func (h *TaskHandlerImpl) HandleUpdateTask(w http.ResponseWriter, r *http.Reques
 	}
 
 	//обновление параметров задачи, обработка ошибки
-	err = h.taskRepository.UpdateTask(task)
+	err = h.taskStorage.UpdateTask(task)
 	if err != nil {
 		respondWithError(w, "Task update failed", http.StatusNotImplemented)
 		return
@@ -222,7 +219,7 @@ func (h *DateHandlerImpl) NextDateHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Парсим дату `now`
-	now, err := time.Parse(DATE_FORMAT, nowStr)
+	now, err := time.Parse(config.DATE_FORMAT, nowStr)
 	if err != nil {
 		http.Error(w, "Некорректный формат даты 'now'", http.StatusBadRequest)
 		return

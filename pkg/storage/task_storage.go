@@ -6,37 +6,34 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/O1V1/go_final_project/pkg/config"
 	"github.com/O1V1/go_final_project/pkg/entities"
 )
 
-var DATE_FORMAT = config.DATE_FORMAT
-
 // интерфейс определяет методы для работы с сущностью Task
-type TaskRepository interface {
+type TaskStorage interface {
 	GetTaskByID(id string) (entities.Task, error)
-	GetTasks(search string) ([]entities.Task, error)
+	FindTasks(search string) ([]entities.Task, error)
 	AddTask(task entities.Task) (string, error)
 	UpdateTask(task entities.Task) error
 	DeleteTask(id string) error
 }
 
-// taskRepository является структурой, которая реализует интерфейс TaskRepository
-type taskRepository struct {
+// taskStorage является структурой, которая реализует интерфейс TaskStorage
+type taskStorage struct {
 	db *sql.DB
 }
 
-// конструктор для структуры taskRepository
-func NewTaskRepository(db *sql.DB) TaskRepository {
-	return &taskRepository{
+// конструктор для структуры taskStorage
+func NewTaskStorage(db *sql.DB) TaskStorage {
+	return &taskStorage{
 		db: db,
 	}
 }
 
-// метод структуры taskRepository, бывшая функция  addTaskToDB
-func (r *taskRepository) AddTask(task entities.Task) (string, error) {
+// метод структуры taskStorage, бывшая функция  addTaskToDB
+func (r *taskStorage) AddTask(task entities.Task) (string, error) {
 	//подготовка запроса
 	stmt, err := r.db.Prepare("INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)")
 	if err != nil {
@@ -62,8 +59,8 @@ func (r *taskRepository) AddTask(task entities.Task) (string, error) {
 	return idStr, nil
 }
 
-// метод структуры taskRepository, бывшая функция getTasksFromDB
-func (r *taskRepository) GetTasks(search string) ([]entities.Task, error) {
+// метод структуры taskStorage, бывшая функция getTasksFromDB
+func (r *taskStorage) FindTasks(search string) ([]entities.Task, error) {
 	//подготовка формы
 	limit := config.TASKS_LIMIT
 	query := ""
@@ -83,7 +80,7 @@ func (r *taskRepository) GetTasks(search string) ([]entities.Task, error) {
 	//выбор задачи на конкретную дату
 	case search != "" && errT == nil:
 		query = `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? ORDER BY date LIMIT ?`
-		search = t.Format(DATE_FORMAT)
+		search = t.Format(config.DATE_FORMAT)
 		rows, err = r.db.Query(query, search, limit)
 		if err != nil {
 			return emptyTaskSlice, err
@@ -123,9 +120,9 @@ func (r *taskRepository) GetTasks(search string) ([]entities.Task, error) {
 	return tasks, nil
 }
 
-// метод структуры taskRepository, бывшая функция getTasksById
+// метод структуры taskStorage, бывшая функция getTasksById
 // получения экземпляра Task по его id из БД
-func (r *taskRepository) GetTaskByID(id string) (entities.Task, error) {
+func (r *taskStorage) GetTaskByID(id string) (entities.Task, error) {
 	var task entities.Task
 	//если в id не только цифры, то не беспокоим БД
 	if !isNumeric(id) {
@@ -138,9 +135,9 @@ func (r *taskRepository) GetTaskByID(id string) (entities.Task, error) {
 	return task, nil
 }
 
-// метод структуры taskRepository, бывшая функция updateTask
+// метод структуры taskStorage, бывшая функция updateTask
 // обновление экземпляра Task в БД
-func (r *taskRepository) UpdateTask(task entities.Task) error {
+func (r *taskStorage) UpdateTask(task entities.Task) error {
 	_, err := r.db.Exec("UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		return err
@@ -148,9 +145,9 @@ func (r *taskRepository) UpdateTask(task entities.Task) error {
 	return nil
 }
 
-// метод структуры taskRepository, бывшая функция DeleteTask
+// метод структуры taskStorage, бывшая функция DeleteTask
 // удаляет запись из БД с помощью SQL-запроса DELETE
-func (r *taskRepository) DeleteTask(id string) error {
+func (r *taskStorage) DeleteTask(id string) error {
 	//проверка, что id содержит только цифры (и что не пустая строка)
 	if !isNumeric(id) {
 		return errors.New("invalid task ID")
@@ -173,10 +170,6 @@ func (r *taskRepository) DeleteTask(id string) error {
 
 // isNumeric проверяет, что в переданной строке только цифры
 func isNumeric(s string) bool {
-	for _, r := range s {
-		if !unicode.IsDigit(r) {
-			return false
-		}
-	}
-	return true
+	_, err := strconv.Atoi(s)
+	return err == nil
 }
